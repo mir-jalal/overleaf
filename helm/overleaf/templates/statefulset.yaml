@@ -21,6 +21,8 @@ spec:
       imagePullSecrets: {{- toYaml . | nindent 8 }}
       {{- end }}
       terminationGracePeriodSeconds: 60
+      # Service env vars (e.g. OVERLEAF_REDIS_PORT=tcp://...) would clash with Overleaf settings
+      enableServiceLinks: false
       containers:
         - name: overleaf
           image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
@@ -49,6 +51,10 @@ spec:
               value: {{ include "overleaf.redisHost" . | quote }}
             - name: REDIS_HOST
               value: {{ include "overleaf.redisHost" . | quote }}
+            - name: OVERLEAF_REDIS_PORT
+              value: {{ .Values.redis.port | quote }}
+            - name: REDIS_PORT
+              value: {{ .Values.redis.port | quote }}
             - name: OVERLEAF_INVITE_TOKEN_SECRET
               valueFrom:
                 secretKeyRef:

@@ -57,6 +57,7 @@ redis:
   # Set enabled=false and provide externalHost to use an external Redis
   enabled: true
   externalHost: ""
+  port: 6379
   image: redis:6.2
   persistence:
     size: 1Gi
