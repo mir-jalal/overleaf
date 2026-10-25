@@ -47,7 +47,7 @@ mongodb:
   # Set enabled=false and provide externalUrl to use an external replica-set MongoDB
   enabled: true
   externalUrl: ""
-  image: mongo:6.0
+  image: mongo:8.0
   persistence:
     size: 8Gi
     storageClass: ""
