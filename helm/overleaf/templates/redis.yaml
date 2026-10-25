@@ -1,0 +1,61 @@
+{{- if .Values.redis.enabled }}
+{{- $n := printf "%s-redis" (include "overleaf.fullname" .) }}
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ $n }}
+  labels: {{- include "overleaf.labels" . | nindent 4 }}
+spec:
+  ports:
+    - name: redis
+      port: 6379
+  selector:
+    app.kubernetes.io/instance: {{ .Release.Name }}
+    app.kubernetes.io/component: redis
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: {{ $n }}
+  labels: {{- include "overleaf.labels" . | nindent 4 }}
+spec:
+  replicas: 1
+  serviceName: {{ $n }}
+  selector:
+    matchLabels:
+      app.kubernetes.io/instance: {{ .Release.Name }}
+      app.kubernetes.io/component: redis
+  template:
+    metadata:
+      labels:
+        {{- include "overleaf.labels" . | nindent 8 }}
+        app.kubernetes.io/component: redis
+    spec:
+      containers:
+        - name: redis
+          image: {{ .Values.redis.image }}
+          args: [--appendonly, "yes"]
+          ports:
+            - name: redis
+              containerPort: 6379
+          readinessProbe:
+            exec:
+              command: [redis-cli, ping]
+          volumeMounts:
+            - name: data
+              mountPath: /data
+          {{- with .Values.redis.resources }}
+          resources: {{- toYaml . | nindent 12 }}
+          {{- end }}
+  volumeClaimTemplates:
+    - metadata:
+        name: data
+      spec:
+        accessModes: [ReadWriteOnce]
+        {{- with .Values.redis.persistence.storageClass }}
+        storageClassName: {{ . | quote }}
+        {{- end }}
+        resources:
+          requests:
+            storage: {{ .Values.redis.persistence.size }}
+{{- end }}

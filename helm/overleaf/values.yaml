@@ -1,0 +1,62 @@
+image:
+  repository: sharelatex/sharelatex
+  tag: latest
+  pullPolicy: IfNotPresent
+
+imagePullSecrets: []
+
+overleaf:
+  appName: Overleaf Community Edition
+  siteUrl: http://localhost
+  behindProxy: false
+  secureCookie: false
+  navTitle: Overleaf Community Edition
+  adminEmail: ""
+  # Extra env vars (name: value) passed to the container
+  extraEnv: {}
+
+persistence:
+  enabled: true
+  size: 10Gi
+  storageClass: ""
+  existingClaim: ""
+
+service:
+  type: ClusterIP
+  port: 80
+
+ingress:
+  enabled: false
+  className: ""
+  annotations:
+    nginx.ingress.kubernetes.io/proxy-body-size: 50m
+    nginx.ingress.kubernetes.io/proxy-read-timeout: "3600"
+    nginx.ingress.kubernetes.io/proxy-send-timeout: "3600"
+  hosts:
+    - host: overleaf.example.com
+  tls: []
+
+mongodb:
+  # Set enabled=false and provide externalUrl to use an external replica-set MongoDB
+  enabled: true
+  externalUrl: ""
+  image: mongo:6.0
+  persistence:
+    size: 8Gi
+    storageClass: ""
+  resources: {}
+
+redis:
+  # Set enabled=false and provide externalHost to use an external Redis
+  enabled: true
+  externalHost: ""
+  image: redis:6.2
+  persistence:
+    size: 1Gi
+    storageClass: ""
+  resources: {}
+
+resources: {}
+nodeSelector: {}
+tolerations: []
+affinity: {}

@@ -1,0 +1,102 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: {{ include "overleaf.fullname" . }}
+  labels: {{- include "overleaf.labels" . | nindent 4 }}
+spec:
+  replicas: 1
+  serviceName: {{ include "overleaf.fullname" . }}
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: {{ .Chart.Name }}
+      app.kubernetes.io/instance: {{ .Release.Name }}
+      app.kubernetes.io/component: web
+  template:
+    metadata:
+      labels:
+        {{- include "overleaf.labels" . | nindent 8 }}
+        app.kubernetes.io/component: web
+    spec:
+      {{- with .Values.imagePullSecrets }}
+      imagePullSecrets: {{- toYaml . | nindent 8 }}
+      {{- end }}
+      terminationGracePeriodSeconds: 60
+      containers:
+        - name: overleaf
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          ports:
+            - name: http
+              containerPort: 80
+          env:
+            - name: OVERLEAF_APP_NAME
+              value: {{ .Values.overleaf.appName | quote }}
+            - name: OVERLEAF_NAV_TITLE
+              value: {{ .Values.overleaf.navTitle | quote }}
+            - name: OVERLEAF_SITE_URL
+              value: {{ .Values.overleaf.siteUrl | quote }}
+            - name: OVERLEAF_BEHIND_PROXY
+              value: {{ .Values.overleaf.behindProxy | quote }}
+            - name: OVERLEAF_SECURE_COOKIE
+              value: {{ .Values.overleaf.secureCookie | quote }}
+            {{- if .Values.overleaf.adminEmail }}
+            - name: OVERLEAF_ADMIN_EMAIL
+              value: {{ .Values.overleaf.adminEmail | quote }}
+            {{- end }}
+            - name: OVERLEAF_MONGO_URL
+              value: {{ include "overleaf.mongoUrl" . | quote }}
+            - name: OVERLEAF_REDIS_HOST
+              value: {{ include "overleaf.redisHost" . | quote }}
+            - name: REDIS_HOST
+              value: {{ include "overleaf.redisHost" . | quote }}
+            {{- range $k, $v := .Values.overleaf.extraEnv }}
+            - name: {{ $k }}
+              value: {{ $v | quote }}
+            {{- end }}
+          volumeMounts:
+            - name: data
+              mountPath: /var/lib/overleaf
+          readinessProbe:
+            httpGet: {path: /status, port: http}
+            initialDelaySeconds: 30
+            periodSeconds: 10
+          livenessProbe:
+            httpGet: {path: /status, port: http}
+            initialDelaySeconds: 120
+            periodSeconds: 30
+            failureThreshold: 6
+          {{- with .Values.resources }}
+          resources: {{- toYaml . | nindent 12 }}
+          {{- end }}
+      {{- with .Values.nodeSelector }}
+      nodeSelector: {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.tolerations }}
+      tolerations: {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.affinity }}
+      affinity: {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- if not .Values.persistence.enabled }}
+      volumes:
+        - name: data
+          emptyDir: {}
+      {{- else if .Values.persistence.existingClaim }}
+      volumes:
+        - name: data
+          persistentVolumeClaim:
+            claimName: {{ .Values.persistence.existingClaim }}
+      {{- end }}
+  {{- if and .Values.persistence.enabled (not .Values.persistence.existingClaim) }}
+  volumeClaimTemplates:
+    - metadata:
+        name: data
+      spec:
+        accessModes: [ReadWriteOnce]
+        {{- with .Values.persistence.storageClass }}
+        storageClassName: {{ . | quote }}
+        {{- end }}
+        resources:
+          requests:
+            storage: {{ .Values.persistence.size }}
+  {{- end }}

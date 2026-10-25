@@ -1,0 +1,8 @@
+Overleaf is starting (first boot takes a few minutes).
+{{- if .Values.ingress.enabled }}
+URL: {{ .Values.overleaf.siteUrl }}
+{{- else }}
+kubectl -n {{ .Release.Namespace }} port-forward svc/{{ include "overleaf.fullname" . }} 8080:{{ .Values.service.port }}
+Then open http://localhost:8080 (set overleaf.siteUrl accordingly).
+{{- end }}
+Create the first admin at /launchpad.
