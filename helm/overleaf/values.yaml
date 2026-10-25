@@ -15,6 +15,13 @@ overleaf:
   # Extra env vars (name: value) passed to the container
   extraEnv: {}
 
+secrets:
+  # Must stay stable across restarts/upgrades. If empty, a random value is generated
+  # once and kept in the <release>-overleaf-secrets Secret (preserved on upgrade/uninstall).
+  inviteTokenSecret: ""
+  # Or reference your own Secret containing the key OVERLEAF_INVITE_TOKEN_SECRET
+  existingSecret: ""
+
 persistence:
   enabled: true
   size: 10Gi
